@@ -1,67 +1,82 @@
 import express from "express";
 import {
-  createCollection,
-  addCollectionItem,
-  getCollections,
-  getCollectionItems,
+  createCollection, getCollections, renameCollection, deleteCollection,
+  addCollectionItem, getCollectionItems, deleteCollectionItem, updateCollectionItem,
 } from "../services/supabase.service.js";
 
 const router = express.Router();
 
-/* ---------------- CREATE COLLECTION ---------------- */
-// POST /api/collections
 router.post("/", async (req, res) => {
   try {
-    const payload = req.body; // { name, user_id?, meta? }
-    const saved = await createCollection(payload);
+    const saved = await createCollection(req.body);
     res.json(saved);
   } catch (err) {
-    console.error("Create collection error:", err);
-    res.status(500).json({ error: err.message || String(err) });
+    res.status(500).json({ error: err.message });
   }
 });
 
-/* ---------------- ADD ITEM TO COLLECTION ---------------- */
-// POST /api/collections/:id/items
-router.post("/:id/items", async (req, res) => {
-  try {
-    const collection_id = req.params.id;
-    const request_data = req.body; // { url, method, headers, body }
-
-    const saved = await addCollectionItem({
-      collection_id,
-      request_data,
-    });
-
-    res.json(saved);
-  } catch (err) {
-    console.error("Add collection item error:", err);
-    res.status(500).json({ error: err.message || String(err) });
-  }
-});
-
-/* ---------------- GET ALL COLLECTIONS ---------------- */
-// GET /api/collections
 router.get("/", async (req, res) => {
   try {
-    const data = await getCollections();
-    res.json(data);
+    res.json(await getCollections());
   } catch (err) {
-    console.error("Get collections error:", err);
-    res.status(500).json({ error: err.message || String(err) });
+    res.status(500).json({ error: err.message });
   }
 });
 
-/* ---------------- GET ALL ITEMS OF ONE COLLECTION ---------------- */
-// GET /api/collections/:id/items
+router.put("/:id", async (req, res) => {
+  try {
+    const updated = await renameCollection(req.params.id, req.body.name);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  try {
+    await deleteCollection(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/:id/items", async (req, res) => {
+  try {
+    const saved = await addCollectionItem({
+      collection_id: req.params.id,
+      name: req.body.name || null,
+      request_data: req.body.request_data,
+    });
+    res.json(saved);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get("/:id/items", async (req, res) => {
   try {
-    const collection_id = req.params.id;
-    const items = await getCollectionItems(collection_id);
-    res.json(items);
+    res.json(await getCollectionItems(req.params.id));
   } catch (err) {
-    console.error("Get collection items error:", err);
-    res.status(500).json({ error: err.message || String(err) });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/:id/items/:itemId", async (req, res) => {
+  try {
+    const updated = await updateCollectionItem(req.params.itemId, req.body);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/:id/items/:itemId", async (req, res) => {
+  try {
+    await deleteCollectionItem(req.params.itemId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
